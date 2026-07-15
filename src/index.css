@@ -350,3 +350,406 @@ body {
   .list-view { padding: 14px; }
   .beacon-card { padding: 14px; }
 }
+
+/* ── Floating Action Button (FAB) ──────────────────────────────── */
+.create-beacon-fab {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 50px;
+  background: var(--accent-status);
+  color: #fff;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  transition: transform var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  animation: fab-pulse 2s infinite;
+}
+
+.create-beacon-fab:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: #2563eb;
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.5);
+}
+
+.create-beacon-fab:active {
+  transform: translateY(0) scale(0.97);
+}
+
+@keyframes fab-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* ── Beacon Overlay Modal ──────────────────────────────────────── */
+.beacon-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 26, 0.75);
+  backdrop-filter: blur(16px);
+  padding: 20px;
+  animation: fade-in var(--transition-fast) ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.beacon-form-container {
+  width: 100%;
+  max-width: 520px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Scrollbar */
+.beacon-form-container::-webkit-scrollbar {
+  width: 6px;
+}
+.beacon-form-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.beacon-form-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+.beacon-form__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.beacon-form__title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #f1f5f9, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.beacon-form__close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  font-weight: 300;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.beacon-form__close-btn:hover {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+}
+
+.beacon-form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.beacon-form__error {
+  background: rgba(255, 77, 106, 0.1);
+  border: 1px solid rgba(255, 77, 106, 0.25);
+  color: var(--accent-need);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.beacon-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.beacon-form__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.required-star {
+  color: var(--accent-need);
+}
+
+/* ── Icon-First Type Grid ──────────────────────────────────────── */
+.beacon-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.beacon-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.beacon-type-btn__icon {
+  font-size: 32px;
+  transition: transform var(--transition-fast);
+}
+
+.beacon-type-btn__text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.beacon-type-btn__label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.beacon-type-btn__desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Hover effects */
+.beacon-type-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.beacon-type-btn:hover .beacon-type-btn__icon {
+  transform: scale(1.1);
+}
+
+/* Active / Checked States with customized colors */
+.beacon-type-btn--need.active {
+  background: rgba(255, 77, 106, 0.12);
+  border-color: var(--accent-need);
+  box-shadow: 0 0 16px rgba(255, 77, 106, 0.2);
+}
+.beacon-type-btn--need.active .beacon-type-btn__label {
+  color: var(--accent-need);
+}
+
+.beacon-type-btn--offer.active {
+  background: rgba(0, 214, 143, 0.12);
+  border-color: var(--accent-offer);
+  box-shadow: 0 0 16px rgba(0, 214, 143, 0.2);
+}
+.beacon-type-btn--offer.active .beacon-type-btn__label {
+  color: var(--accent-offer);
+}
+
+.beacon-type-btn--alert.active {
+  background: rgba(255, 170, 0, 0.12);
+  border-color: var(--accent-alert);
+  box-shadow: 0 0 16px rgba(255, 170, 0, 0.2);
+}
+.beacon-type-btn--alert.active .beacon-type-btn__label {
+  color: var(--accent-alert);
+}
+
+.beacon-type-btn--status.active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--accent-status);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+}
+.beacon-type-btn--status.active .beacon-type-btn__label {
+  color: var(--accent-status);
+}
+
+/* ── Urgency Grid ──────────────────────────────────────────────── */
+.beacon-urgency-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.beacon-urgency-btn {
+  padding: 12px 0;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.beacon-urgency-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary);
+}
+
+.beacon-urgency-btn--critical.active {
+  background: rgba(255, 77, 106, 0.15);
+  border-color: var(--accent-need);
+  color: var(--accent-need);
+  box-shadow: 0 0 12px rgba(255, 77, 106, 0.15);
+}
+
+.beacon-urgency-btn--high.active {
+  background: rgba(255, 136, 0, 0.15);
+  border-color: #ff8800;
+  color: #ff8800;
+  box-shadow: 0 0 12px rgba(255, 136, 0, 0.15);
+}
+
+.beacon-urgency-btn--medium.active {
+  background: rgba(255, 170, 0, 0.15);
+  border-color: var(--accent-alert);
+  color: var(--accent-alert);
+  box-shadow: 0 0 12px rgba(255, 170, 0, 0.15);
+}
+
+.beacon-urgency-btn--low.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-status);
+  color: var(--accent-status);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+/* ── Message Textarea ──────────────────────────────────────────── */
+.beacon-textarea {
+  width: 100%;
+  background: rgba(10, 14, 26, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.beacon-textarea:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
+}
+
+/* ── Giant Submit Button ───────────────────────────────────────── */
+.beacon-submit-btn {
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--active-color);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-fast), filter var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.beacon-submit-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.beacon-submit-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Responsive modal styling ─────────────────────────────────── */
+@media (max-width: 480px) {
+  .beacon-overlay {
+    padding: 10px;
+  }
+  .beacon-form-container {
+    max-height: 95vh;
+  }
+  .beacon-form {
+    padding: 16px;
+    gap: 18px;
+  }
+  .beacon-type-btn {
+    padding: 12px;
+    gap: 10px;
+  }
+  .beacon-type-btn__icon {
+    font-size: 26px;
+  }
+  .beacon-type-btn__label {
+    font-size: 13px;
+  }
+  .beacon-urgency-btn {
+    padding: 10px 0;
+    font-size: 10px;
+  }
+}
+

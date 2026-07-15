@@ -1,10 +1,47 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from './db';
+import { saveNewBeacon } from './crypto';
 import MapView from './components/MapView';
 import ListView from './components/ListView';
-import DUMMY_BEACONS from './data/beacons';
+import CreateBeaconForm from './components/CreateBeaconForm';
 
 export default function App() {
   const [activeView, setActiveView] = useState('map');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Dev 2: Use Dexie Live Query to fetch real beacons from the database!
+  const beacons = useLiveQuery(() => db.beacons.orderBy('timestamp').reverse().toArray(), []) || [];
+
+  const handleCreateBeacon = async (beaconData) => {
+    try {
+      // Dev 2: Fetch GPS Location
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by your browser'));
+        } else {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+        }
+      }).catch(err => {
+        console.warn("Could not get GPS location, defaulting to Mumbai center.", err);
+        return { coords: { latitude: 18.932, longitude: 72.832 } };
+      });
+
+      const finalData = {
+        ...beaconData,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+
+      // Dev 4: Cryptographically sign and save to local Dexie store
+      await saveNewBeacon(finalData);
+      
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error("Failed to broadcast beacon:", err);
+      alert("Failed to create beacon: " + err.message);
+    }
+  };
 
   return (
     <div className="app" id="app-root">
@@ -41,11 +78,29 @@ export default function App() {
 
       <main className="app-main" id="app-main">
         {activeView === 'map' ? (
-          <MapView beacons={DUMMY_BEACONS} />
+          <MapView beacons={beacons} />
         ) : (
-          <ListView beacons={DUMMY_BEACONS} />
+          <ListView beacons={beacons} />
         )}
+
+        {/* Floating Action Button for easy access under stress */}
+        <button
+          className="create-beacon-fab"
+          onClick={() => setShowCreateForm(true)}
+          id="open-create-beacon-form"
+          aria-label="Create new beacon broadcast"
+        >
+          <span>📡</span> Broadcast
+        </button>
       </main>
+
+      {/* Conditionally render the modal overlay */}
+      {showCreateForm && (
+        <CreateBeaconForm
+          onSubmit={handleCreateBeacon}
+          onClose={() => setShowCreateForm(false)}
+        />
+      )}
     </div>
   );
 }
