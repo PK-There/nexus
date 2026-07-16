@@ -1,6 +1,9 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
+import { calculateTrustScore } from '../trustLogic';
 
 // ── Beacon type → marker color mapping ──────────────────────────────
 const BEACON_COLORS = {
@@ -75,6 +78,10 @@ export default function MapView({ beacons }) {
   const defaultCenter = [18.932, 72.832];
   const defaultZoom = 14;
 
+  const device = useLiveQuery(() => db.device.get('me'));
+  const edges = useLiveQuery(() => db.trustEdges.toArray()) || [];
+  const myKey = device?.publicKey;
+
   return (
     <div className="map-wrapper" id="map-wrapper">
       <MapContainer
@@ -90,45 +97,65 @@ export default function MapView({ beacons }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {beacons.map((beacon) => (
-          <Marker
-            key={beacon.id}
-            position={[beacon.lat, beacon.lng]}
-            icon={createBeaconIcon(beacon.type)}
-          >
-            <Popup>
-              <div style={{ fontFamily: 'Inter, sans-serif', minWidth: 200 }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 6,
-                }}>
-                  <span style={{
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: BEACON_COLORS[beacon.type],
+        {beacons.map((beacon) => {
+          const trustScore = calculateTrustScore(beacon.authorPublicKey, myKey, edges);
+          
+          return (
+            <Marker
+              key={beacon.id}
+              position={[beacon.lat, beacon.lng]}
+              icon={createBeaconIcon(beacon.type)}
+            >
+              <Popup>
+                <div style={{ fontFamily: 'Inter, sans-serif', minWidth: 200 }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 6,
                   }}>
-                    {BEACON_LABELS[beacon.type]}
+                    <span style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: BEACON_COLORS[beacon.type],
+                    }}>
+                      {BEACON_LABELS[beacon.type]}
+                    </span>
+                    <span
+                      dangerouslySetInnerHTML={{ __html: urgencyBadge(beacon.urgency) }}
+                    />
+                  </div>
+                  
+                  {trustScore > 0 && (
+                    <div style={{ marginBottom: 6 }}>
+                      <span style={{
+                        fontSize: '11px',
+                        background: 'rgba(0, 214, 143, 0.2)',
+                        color: '#00d68f',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}>
+                        ✅ Trusted {trustScore === 100 ? '(You)' : trustScore === 80 ? '(Direct)' : '(2-hop)'}
+                      </span>
+                    </div>
+                  )}
+
+                  <p style={{ margin: '6px 0', fontSize: 13, lineHeight: 1.45 }}>
+                    {beacon.message}
+                  </p>
+                  <span style={{
+                    fontSize: 11,
+                    color: '#888',
+                    fontStyle: 'italic',
+                  }}>
+                    {timeAgo(beacon.timestamp)}
                   </span>
-                  <span
-                    dangerouslySetInnerHTML={{ __html: urgencyBadge(beacon.urgency) }}
-                  />
                 </div>
-                <p style={{ margin: '6px 0', fontSize: 13, lineHeight: 1.45 }}>
-                  {beacon.message}
-                </p>
-                <span style={{
-                  fontSize: 11,
-                  color: '#888',
-                  fontStyle: 'italic',
-                }}>
-                  {timeAgo(beacon.timestamp)}
-                </span>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

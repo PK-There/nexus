@@ -13,7 +13,7 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('SignalDB');
 
-db.version(2).stores({
+db.version(3).stores({
   // Indexed fields: id (auto-increment primary key), type, urgency, timestamp, lat, lng
   // Non-indexed fields are still stored, just not queryable via index.
   beacons: '++id, type, urgency, timestamp, lat, lng, authorPublicKey',
@@ -21,6 +21,9 @@ db.version(2).stores({
   // Phase 4: Trust edges for the web of trust
   // 'id' is a string combining both keys: fromKey_toKey
   trustEdges: 'id, fromKey, toKey, timestamp',
+  
+  // Stores local device cryptographic identity
+  device: 'id',
 });
 
 /**

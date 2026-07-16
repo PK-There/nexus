@@ -4,6 +4,10 @@
  * message, coordinates, and relative timestamp.
  */
 
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
+import { calculateTrustScore } from '../trustLogic';
+
 // ── Config ──────────────────────────────────────────────────────────
 const BEACON_CONFIG = {
   NEED: {
@@ -52,9 +56,10 @@ function timeAgo(ts) {
 }
 
 // ── Single Beacon Card ──────────────────────────────────────────────
-function BeaconCard({ beacon }) {
+function BeaconCard({ beacon, myKey, edges }) {
   const cfg = BEACON_CONFIG[beacon.type] || BEACON_CONFIG.STATUS;
   const urg = URGENCY_STYLES[beacon.urgency] || URGENCY_STYLES.low;
+  const trustScore = calculateTrustScore(beacon.authorPublicKey, myKey, edges);
 
   return (
     <article
@@ -74,6 +79,21 @@ function BeaconCard({ beacon }) {
           <span className="beacon-card__type" style={{ color: cfg.color }}>
             {cfg.label}
           </span>
+          {trustScore > 0 && (
+            <span className="trust-badge" title={`Trust Score: ${trustScore}`} style={{
+              marginLeft: '8px',
+              fontSize: '12px',
+              background: 'rgba(0, 214, 143, 0.2)',
+              color: '#00d68f',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              ✅ Trusted {trustScore === 100 ? '(You)' : trustScore === 80 ? '(Direct)' : '(2-hop)'}
+            </span>
+          )}
         </div>
         <span
           className="beacon-card__urgency"
@@ -101,6 +121,10 @@ function BeaconCard({ beacon }) {
 
 // ── List View ───────────────────────────────────────────────────────
 export default function ListView({ beacons }) {
+  const device = useLiveQuery(() => db.device.get('me'));
+  const edges = useLiveQuery(() => db.trustEdges.toArray()) || [];
+  const myKey = device?.publicKey;
+
   return (
     <section className="list-view" id="list-view" aria-label="Beacon feed">
       <h2 className="list-view__title">
@@ -110,7 +134,7 @@ export default function ListView({ beacons }) {
       </h2>
       <div className="list-view__cards">
         {beacons.map((beacon) => (
-          <BeaconCard key={beacon.id} beacon={beacon} />
+          <BeaconCard key={beacon.id} beacon={beacon} myKey={myKey} edges={edges} />
         ))}
       </div>
     </section>

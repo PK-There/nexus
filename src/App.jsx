@@ -22,6 +22,7 @@ import ListView from './components/ListView';
 import CreateBeaconForm from './components/CreateBeaconForm';
 import SyncModal from './components/SyncModal';
 import TrustGraph from './components/TrustGraph';
+import { saveNewBeacon } from './crypto';
 
 export default function App() {
   const [activeView, setActiveView] = useState('map');
@@ -79,6 +80,22 @@ export default function App() {
     setShowForm(false);
     setPinDropMode(false);
     setPinLocation(null);
+  }
+
+  async function handleCreateBeacon(beaconData) {
+    try {
+      const payload = {
+        ...beaconData,
+        lat: pinLocation ? pinLocation.lat : null,
+        lng: pinLocation ? pinLocation.lng : null
+      };
+      
+      await saveNewBeacon(payload);
+      handleCloseForm();
+    } catch (err) {
+      console.error("Failed to create beacon:", err);
+      alert("Failed to create beacon.");
+    }
   }
 
   // ── Status indicator logic ─────────────────────────────────
@@ -190,6 +207,7 @@ export default function App() {
       {showForm && (
         <CreateBeaconForm
           onClose={handleCloseForm}
+          onSubmit={handleCreateBeacon}
           pinLocation={pinLocation}
           onRequestPin={() => {
             setPinDropMode(true);
