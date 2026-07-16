@@ -1,16 +1,4 @@
-/**
- * Hardcoded dummy beacon data for Phase 1 scaffolding.
- * Each beacon has: id, type, message, lat, lng, urgency, timestamp.
- * 
- * Types follow the data model from the build plan:
- *   NEED  — Someone needs help
- *   OFFER — Someone is offering help
- *   ALERT — Area-wide warning
- *   STATUS — "I'm safe" check-in
- *
- * Coordinates are set around central Mumbai (Colaba / Fort area)
- * for a realistic Indian disaster-response demo scenario.
- */
+
 const DUMMY_BEACONS = [
   {
     id: 'beacon-001',

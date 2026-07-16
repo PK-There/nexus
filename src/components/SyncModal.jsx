@@ -1,26 +1,14 @@
-/**
- * SyncModal.jsx — Mesh Sync UI
- *
- * Provides two connection approaches:
- *   1. ONLINE  — Enter a 4-digit room code, signaling happens automatically via relay
- *   2. OFFLINE — Copy/paste an SDP offer/answer JSON string (simulates QR/Bluetooth)
- *
- * Once connected, exposes the P2P data channel for beacon delta-sync.
- *
- * Props:
- *   onClose() — close the modal
- */
+
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { syncService } from '../syncService';
 
-// Generate a random 4-digit room code
 function randomCode() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 export default function SyncModal({ onClose }) {
-  // ── UI state ──────────────────────────────────────────
+
   const [tab, setTab] = useState('online');         // 'online' | 'offline'
   const [relayStatus, setRelayStatus] = useState('disconnected'); // connected | disconnected | error
   const [peerStatus, setPeerStatus] = useState('idle');  // idle | connecting | connected
@@ -28,20 +16,21 @@ export default function SyncModal({ onClose }) {
   const [generatedCode, setGeneratedCode] = useState('');
   const [logs, setLogs] = useState([]);
 
-  // Offline mode state
   const [offlineStep, setOfflineStep] = useState('choose'); // choose | offer-created | answer-created | connected
   const [localSignal, setLocalSignal] = useState('');
   const [remoteSignal, setRemoteSignal] = useState('');
 
   const logEndRef = useRef(null);
 
-  // ── Logging ────────────────────────────────────────────
   const addLog = useCallback((msg, type = 'info') => {
     setLogs((prev) => [...prev.slice(-50), { msg, type, ts: Date.now() }]);
   }, []);
 
-  // ── Wire up syncService callbacks ──────────────────────
   useEffect(() => {
+
+    setRelayStatus(syncService.isRelayConnected ? 'connected' : 'disconnected');
+    setPeerStatus(syncService.isPeerConnected ? 'connected' : 'idle');
+
     syncService.onRelayStatus = (status) => {
       setRelayStatus(status);
     };
@@ -54,7 +43,7 @@ export default function SyncModal({ onClose }) {
       setPeerStatus('connected');
       setOfflineStep('connected');
       addLog(`🟢 Connected to peer: ${peerId}`, 'success');
-      // Auto-trigger beacon sync
+
       setTimeout(() => {
         syncService.requestBeaconSync();
       }, 500);
@@ -76,17 +65,16 @@ export default function SyncModal({ onClose }) {
 
     syncService.onSignalGenerated = (signalJSON) => {
       setLocalSignal((prev) => {
-        // For trickle: accumulate signals (but for non-trickle / first signal, just set)
+
         if (!prev) return signalJSON;
         return signalJSON; // Latest signal replaces (SDP offer/answer is the important one)
       });
     };
 
-    // Connect to relay on mount
     syncService.connectRelay();
 
     return () => {
-      // Don't destroy on unmount — keep connection alive
+
       syncService.onRelayStatus = null;
       syncService.onSyncLog = null;
       syncService.onPeerConnected = null;
@@ -97,12 +85,10 @@ export default function SyncModal({ onClose }) {
     };
   }, [addLog]);
 
-  // Auto-scroll logs
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // ── Online: Room code handlers ─────────────────────────
   function handleCreateRoom() {
     const code = randomCode();
     setRoomCode(code);
@@ -116,7 +102,6 @@ export default function SyncModal({ onClose }) {
     syncService.joinRoom(roomCode);
   }
 
-  // ── Offline: Manual signal exchange ────────────────────
   function handleCreateOffer() {
     setOfflineStep('offer-created');
     setLocalSignal('');
@@ -135,13 +120,16 @@ export default function SyncModal({ onClose }) {
     syncService.acceptOfflineAnswer(remoteSignal.trim());
   }
 
-  // ── Manual sync trigger ────────────────────────────────
   function handleManualSync() {
     syncService.requestBeaconSync();
-    addLog('Manual sync triggered');
+    addLog('Manual P2P sync triggered');
   }
 
-  // ── Copy to clipboard ─────────────────────────────────
+  function handleRelaySync() {
+    syncService.pushAndPullRelay();
+    addLog('🌐 Syncing via relay server…', 'info');
+  }
+
   async function copyToClipboard(text) {
     try {
       await navigator.clipboard.writeText(text);
@@ -151,7 +139,6 @@ export default function SyncModal({ onClose }) {
     }
   }
 
-  // ── Relay status indicator ─────────────────────────────
   const relayDot = relayStatus === 'connected' ? '🟢'
     : relayStatus === 'error' ? '🔴' : '🟡';
   const relayText = relayStatus === 'connected' ? 'Relay Online'
@@ -160,7 +147,7 @@ export default function SyncModal({ onClose }) {
   return (
     <div className="form-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sync-modal">
-        {/* ── Header ──────────────────────────────────── */}
+        {}
         <div className="form-header">
           <h2>Mesh Sync</h2>
           <div className="sync-header-right">
@@ -173,7 +160,7 @@ export default function SyncModal({ onClose }) {
           </div>
         </div>
 
-        {/* ── Tab toggle ──────────────────────────────── */}
+        {}
         <div className="sync-tabs">
           <button
             className={`sync-tab ${tab === 'online' ? 'active' : ''}`}
@@ -189,12 +176,24 @@ export default function SyncModal({ onClose }) {
           </button>
         </div>
 
-        {/* ── Online Tab ──────────────────────────────── */}
+        {}
         {tab === 'online' && (
           <div className="sync-tab-content">
-            <p className="sync-desc">
-              Connect to another device through the relay server using a shared 4-digit code.
-            </p>
+            {}
+            <div className="relay-sync-section">
+              <p className="sync-desc">
+                Both devices must be on the same network. Click <strong>Sync via Relay</strong> on each device to exchange all beacons instantly.
+              </p>
+              <button
+                className={`sync-action-btn primary ${relayStatus !== 'connected' ? 'disabled' : ''}`}
+                onClick={handleRelaySync}
+                disabled={relayStatus !== 'connected'}
+              >
+                🌐 Sync via Relay {relayStatus !== 'connected' ? '(Offline)' : ''}
+              </button>
+            </div>
+
+            <div className="sync-divider"><span>or use P2P room code</span></div>
 
             {peerStatus === 'connected' ? (
               <div className="sync-connected-card">
@@ -249,7 +248,7 @@ export default function SyncModal({ onClose }) {
           </div>
         )}
 
-        {/* ── Offline Tab ─────────────────────────────── */}
+        {}
         {tab === 'offline' && (
           <div className="sync-tab-content">
             <p className="sync-desc">
@@ -351,7 +350,7 @@ export default function SyncModal({ onClose }) {
           </div>
         )}
 
-        {/* ── Event Log ───────────────────────────────── */}
+        {}
         <div className="sync-log">
           <div className="sync-log-header">Event Log</div>
           <div className="sync-log-body">

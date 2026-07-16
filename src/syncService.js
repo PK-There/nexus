@@ -1,35 +1,12 @@
-/**
- * syncService.js — Mesh Sync Engine
- *
- * Wraps simple-peer (WebRTC) and Socket.io into a clean, reusable API
- * for device-to-device beacon syncing.
- *
- * Two modes:
- *   1. OFFLINE (Sneakernet) — manual copy/paste of offer/answer JSON strings
- *   2. ONLINE  (Room Code)  — 4-digit room code via Socket.io signaling server
- *
- * Also provides a "Relay Bridge" mode: if the device has internet,
- * it auto-pushes/pulls beacons to/from the Socket.io relay server,
- * bridging offline mesh peers.
- *
- * Usage:
- *   import { syncService } from './syncService';
- *   syncService.onPeerConnected = (peerId) => { ... };
- *   syncService.onDataReceived  = (data)   => { ... };
- *   syncService.connectRelay();
- *   syncService.createRoom('1234');
- *   syncService.joinRoom('1234');
- *   syncService.sendData({ beacons: [...] });
- */
+
 
 import { io } from 'socket.io-client';
 import SimplePeer from 'simple-peer';
 import { db } from './db';
 import { verifyBeaconSignature } from './crypto';
 
-const RELAY_URL = 'http://localhost:4000';
+const RELAY_URL = '/';
 
-// ── Event callback slots (consumers override these) ──────────────
 let _onPeerConnected    = null;  // (peerId: string) => void
 let _onPeerDisconnected = null;  // (peerId: string) => void
 let _onDataReceived     = null;  // (data: any) => void
@@ -39,25 +16,18 @@ let _onSignalGenerated  = null;  // (signalJSON: string) => void  — for offlin
 let _onRoomJoined       = null;  // (roomCode: string) => void
 let _onRoomError        = null;  // (error: string) => void
 
-// ── Internal state ───────────────────────────────────────────────
 let socket  = null;
 let peer    = null;
 let peerConnected = false;
 let currentRoom   = null;
 let relayConnected = false;
 
-// Relay bridge auto-sync interval
 let relaySyncInterval = null;
 
-// ── Logging helper ───────────────────────────────────────────────
 function log(msg, type = 'info') {
   console.log(`[SyncService] ${msg}`);
   _onSyncLog?.(msg, type);
 }
-
-// ================================================================
-//  SOCKET.IO RELAY CONNECTION
-// ================================================================
 
 function connectRelay() {
   if (socket?.connected) {
@@ -75,7 +45,7 @@ function connectRelay() {
     relayConnected = true;
     log(`Connected to relay — ID: ${socket.id}`, 'success');
     _onRelayStatus?.('connected');
-    // Start relay bridge auto-sync
+
     startRelayBridge();
   });
 
@@ -92,7 +62,6 @@ function connectRelay() {
     _onRelayStatus?.('error');
   });
 
-  // ── Room-based signaling events ──
   socket.on('room-joined', ({ roomCode, peerCount }) => {
     currentRoom = roomCode;
     log(`Joined room ${roomCode} (${peerCount} peer(s))`, 'success');
@@ -104,26 +73,23 @@ function connectRelay() {
     _onRoomError?.(message);
   });
 
-  // When the other peer joins, the server tells us to initiate
   socket.on('room-peer-joined', ({ peerId }) => {
     log(`Peer ${peerId} joined room — initiating WebRTC…`);
     createPeerConnection(true, peerId);
   });
 
-  // Incoming signal relay from room peer
   socket.on('room-signal', ({ fromId, signal }) => {
     log(`Signal from ${fromId}`, 'in');
     if (!peer) {
-      // We're the responder — create non-initiator peer
+
       createPeerConnection(false, fromId);
     }
     peer.signal(signal);
   });
 
-  // ── Relay bridge events ──
   socket.on('relay-beacons', async (beacons) => {
     log(`Received ${beacons.length} beacon(s) from relay bridge`, 'in');
-    await mergeIncomingBeacons(beacons);
+    await mergeIncomingBeacons(beacons, true); // true = fromRelay
   });
 }
 
@@ -139,10 +105,6 @@ function disconnectRelay() {
 function getSocketId() {
   return socket?.id || null;
 }
-
-// ================================================================
-//  ROOM-BASED SIGNALING (Online approach)
-// ================================================================
 
 function createRoom(roomCode) {
   if (!socket?.connected) {
@@ -164,10 +126,6 @@ function leaveRoom() {
   currentRoom = null;
 }
 
-// ================================================================
-//  WEBRTC PEER CONNECTION (simple-peer)
-// ================================================================
-
 function createPeerConnection(initiator, targetId) {
   if (peer) {
     peer.destroy();
@@ -188,10 +146,10 @@ function createPeerConnection(initiator, targetId) {
 
   peer.on('signal', (signal) => {
     if (socket?.connected && currentRoom) {
-      // Online mode: route signal via room
+
       socket.emit('room-signal', { roomCode: currentRoom, targetId, signal });
     } else {
-      // Offline mode: emit the signal for manual copy/paste
+
       const signalStr = JSON.stringify(signal);
       log(`Signal generated (${signal.type || 'candidate'})`, 'out');
       _onSignalGenerated?.(signalStr);
@@ -227,12 +185,10 @@ function createPeerConnection(initiator, targetId) {
   });
 }
 
-// ── Offline mode: manual signal exchange ─────────────────────────
-
 function createOfflineOffer() {
   log('Creating offline offer…');
   createPeerConnection(true, null);
-  // Signal will be emitted via _onSignalGenerated
+
 }
 
 function acceptOfflineOffer(offerJSON) {
@@ -259,10 +215,6 @@ function acceptOfflineAnswer(answerJSON) {
   }
 }
 
-// ================================================================
-//  DATA CHANNEL — SEND / RECEIVE
-// ================================================================
-
 function sendData(data) {
   if (!peer || !peerConnected) {
     log('No P2P connection — cannot send', 'error');
@@ -274,19 +226,15 @@ function sendData(data) {
   return true;
 }
 
-/**
- * Send a beacon-sync request: our beacon ID list + timestamps.
- * The other peer responds with beacons we're missing (delta sync).
- */
 async function requestBeaconSync() {
   const beacons = await db.beacons.toArray();
   const edges = await db.trustEdges.toArray();
-  
+
   const manifest = beacons.map((b) => ({
     id: b.id,
     timestamp: b.timestamp,
   }));
-  
+
   const edgeManifest = edges.map((e) => ({
     id: e.id,
     timestamp: e.timestamp,
@@ -300,21 +248,18 @@ async function requestBeaconSync() {
   log(`Sent sync request (${manifest.length} beacons, ${edgeManifest.length} edges)`);
 }
 
-/**
- * Handle incoming P2P data.
- */
 async function handleIncomingData(data) {
   switch (data.type) {
     case 'sync-request': {
-      // Peer sent their manifests
+
       const ourBeacons = await db.beacons.toArray();
       const theirBeaconIds = new Set(data.manifest.map((m) => m.id));
       const missingBeacons = ourBeacons.filter((b) => !theirBeaconIds.has(b.id));
-      
+
       const ourEdges = await db.trustEdges.toArray();
       const theirEdgeIds = new Set(data.edgeManifest.map((m) => m.id));
       const missingEdges = ourEdges.filter((e) => !theirEdgeIds.has(e.id));
-      
+
       sendData({
         type: 'sync-response',
         beacons: missingBeacons,
@@ -324,10 +269,10 @@ async function handleIncomingData(data) {
 
       const ourBeaconIds = new Set(ourBeacons.map((b) => b.id));
       const weNeedBeacons = data.manifest.filter((m) => !ourBeaconIds.has(m.id));
-      
+
       const ourEdgeIds = new Set(ourEdges.map((e) => e.id));
       const weNeedEdges = data.edgeManifest.filter((m) => !ourEdgeIds.has(m.id));
-      
+
       if (weNeedBeacons.length > 0 || weNeedEdges.length > 0) {
         sendData({ 
           type: 'sync-pull', 
@@ -348,7 +293,7 @@ async function handleIncomingData(data) {
     case 'sync-pull': {
       const requestedBeacons = await db.beacons.where('id').anyOf(data.beaconIds || []).toArray();
       const requestedEdges = await db.trustEdges.where('id').anyOf(data.edgeIds || []).toArray();
-      
+
       sendData({
         type: 'sync-response',
         beacons: requestedBeacons,
@@ -363,23 +308,23 @@ async function handleIncomingData(data) {
   }
 }
 
-/**
- * Merge incoming beacons into local IndexedDB (last-write-wins by ID).
- */
-async function mergeIncomingBeacons(beacons) {
+async function mergeIncomingBeacons(beacons, fromRelay = false) {
   if (!beacons || beacons.length === 0) return;
 
   let added = 0;
   let updated = 0;
-
   let rejected = 0;
 
+  const skipVerification = fromRelay || !(window.crypto?.subtle);
+
   for (const beacon of beacons) {
-    const isValid = await verifyBeaconSignature(beacon);
-    if (!isValid) {
-      log(`Rejected beacon ${beacon.id} due to invalid signature`, 'error');
-      rejected++;
-      continue;
+    if (!skipVerification) {
+      const isValid = await verifyBeaconSignature(beacon);
+      if (!isValid) {
+        log(`Rejected beacon ${beacon.id} due to invalid signature`, 'error');
+        rejected++;
+        continue;
+      }
     }
 
     const existing = typeof beacon.id === 'string'
@@ -395,23 +340,27 @@ async function mergeIncomingBeacons(beacons) {
     }
   }
 
-  log(`Merged: ${added} added, ${updated} updated, ${rejected} rejected`, 'success');
+  log(`Merged: ${added} added, ${updated} updated${rejected > 0 ? `, ${rejected} rejected` : ''}`, 'success');
 }
 
 import { verifyTrustEdgeSignature } from './crypto';
 
-async function mergeIncomingEdges(edges) {
+async function mergeIncomingEdges(edges, fromRelay = false) {
   if (!edges || edges.length === 0) return;
 
   let added = 0;
   let rejected = 0;
 
+  const skipVerification = fromRelay || !(window.crypto?.subtle);
+
   for (const edge of edges) {
-    const isValid = await verifyTrustEdgeSignature(edge);
-    if (!isValid) {
-      log(`Rejected edge ${edge.id} due to invalid signature`, 'error');
-      rejected++;
-      continue;
+    if (!skipVerification) {
+      const isValid = await verifyTrustEdgeSignature(edge);
+      if (!isValid) {
+        log(`Rejected edge ${edge.id} due to invalid signature`, 'error');
+        rejected++;
+        continue;
+      }
     }
 
     const existing = await db.trustEdges.get(edge.id);
@@ -424,14 +373,9 @@ async function mergeIncomingEdges(edges) {
   log(`Merged Edges: ${added} added, ${rejected} rejected`, 'success');
 }
 
-// ================================================================
-//  RELAY BRIDGE (auto push/pull when internet is available)
-// ================================================================
-
 function startRelayBridge() {
   if (relaySyncInterval) return;
 
-  // Push beacons to relay immediately, then every 30s
   pushBeaconsToRelay();
   pullBeaconsFromRelay();
 
@@ -465,10 +409,6 @@ function pullBeaconsFromRelay() {
   log('Requested beacons from relay', 'out');
 }
 
-// ================================================================
-//  CLEANUP
-// ================================================================
-
 function destroyPeer() {
   if (peer) {
     peer.destroy();
@@ -482,37 +422,30 @@ function destroy() {
   disconnectRelay();
 }
 
-// ================================================================
-//  PUBLIC API
-// ================================================================
-
 export const syncService = {
-  // ── Connection ──
+
   connectRelay,
   disconnectRelay,
   getSocketId,
   get isRelayConnected() { return relayConnected; },
   get isPeerConnected() { return peerConnected; },
 
-  // ── Room-based signaling (online) ──
   createRoom,
   joinRoom,
   leaveRoom,
 
-  // ── Offline signaling ──
   createOfflineOffer,
   acceptOfflineOffer,
   acceptOfflineAnswer,
 
-  // ── Data channel ──
   sendData,
   requestBeaconSync,
 
-  // ── Cleanup ──
   destroyPeer,
   destroy,
 
-  // ── Event callbacks (set by consumer) ──
+  pushAndPullRelay: () => { pushBeaconsToRelay(); pullBeaconsFromRelay(); },
+
   set onPeerConnected(fn)    { _onPeerConnected = fn; },
   set onPeerDisconnected(fn) { _onPeerDisconnected = fn; },
   set onDataReceived(fn)     { _onDataReceived = fn; },

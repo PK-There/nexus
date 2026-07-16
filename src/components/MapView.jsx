@@ -1,11 +1,10 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { calculateTrustScore } from '../trustLogic';
 
-// ── Beacon type → marker color mapping ──────────────────────────────
 const BEACON_COLORS = {
   NEED:   '#ff4d6a',  // urgent red-pink
   OFFER:  '#00d68f',  // helpful green
@@ -20,7 +19,6 @@ const BEACON_LABELS = {
   STATUS: 'ℹ️ STATUS',
 };
 
-// ── Custom colored circle marker via SVG data-URI ───────────────────
 function createBeaconIcon(type) {
   const color = BEACON_COLORS[type] || '#888';
   const svg = `
@@ -43,7 +41,6 @@ function createBeaconIcon(type) {
   });
 }
 
-// ── Urgency badge styling ───────────────────────────────────────────
 function urgencyBadge(urgency) {
   const map = {
     critical: { bg: '#ff4d6a', label: 'CRITICAL' },
@@ -64,7 +61,6 @@ function urgencyBadge(urgency) {
   ">${u.label}</span>`;
 }
 
-// ── Time-ago helper ─────────────────────────────────────────────────
 function timeAgo(ts) {
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 60) return `${diff}s ago`;
@@ -72,9 +68,16 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
-// ── The Map Component ───────────────────────────────────────────────
-export default function MapView({ beacons }) {
-  // Center on Mumbai (Colaba/Fort area)
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click(e) {
+      if (onMapClick) onMapClick(e.latlng);
+    },
+  });
+  return null;
+}
+
+export default function MapView({ beacons, pinDropMode, onMapClick }) {
   const defaultCenter = [18.932, 72.832];
   const defaultZoom = 14;
 
@@ -88,18 +91,22 @@ export default function MapView({ beacons }) {
         center={defaultCenter}
         zoom={defaultZoom}
         scrollWheelZoom={true}
-        className="leaflet-map"
+        style={{ width: '100%', height: '100%' }}
+        className={`leaflet-map ${pinDropMode ? 'pin-drop-mode' : ''}`}
         id="signal-map"
       >
-        {/* Standard OSM tiles — no API key needed */}
+        {}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapClickHandler onMapClick={onMapClick} />
+
         {beacons.map((beacon) => {
+          if (beacon.lat == null || beacon.lng == null) return null; // Don't render marker if no location
           const trustScore = calculateTrustScore(beacon.authorPublicKey, myKey, edges);
-          
+
           return (
             <Marker
               key={beacon.id}
@@ -125,7 +132,7 @@ export default function MapView({ beacons }) {
                       dangerouslySetInnerHTML={{ __html: urgencyBadge(beacon.urgency) }}
                     />
                   </div>
-                  
+
                   {trustScore > 0 && (
                     <div style={{ marginBottom: 6 }}>
                       <span style={{

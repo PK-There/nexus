@@ -1,26 +1,16 @@
 import { useState } from 'react';
 import PrintableQRBeacon from './PrintableQRBeacon';
 
-/**
- * CreateBeaconForm — A stress-proof, high-contrast form designed for disaster areas.
- * Large, easy-to-hit "icon-first" buttons to quickly toggle type and urgency.
- *
- * Props:
- *   onSubmit(beaconData) — callback with { type, urgency, message }
- *   onClose() — callback to close/dismiss the form view
- */
-export default function CreateBeaconForm({ onSubmit, onClose }) {
+export default function CreateBeaconForm({ onSubmit, onClose, pinLocation, onDropPin, onGetGPS }) {
   const [type, setType] = useState('');
   const [urgency, setUrgency] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showQR, setShowQR] = useState(false);
 
-  // Voice Input State
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState('');
 
-  // Setup SpeechRecognition API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const supportsSpeech = !!SpeechRecognition;
 
@@ -83,19 +73,18 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
       setSpeechError('Browser does not support voice input.');
       return;
     }
-    
-    // Prevent double clicking if already listening
+
     if (isListening) return;
 
     setSpeechError('');
     setIsListening(true);
-    
+
     try {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false; // Only trigger on final sentences
       recognition.lang = 'en-US';
-      
+
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setMessage((prev) => prev ? `${prev} ${transcript}` : transcript);
@@ -146,7 +135,7 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
             </div>
           )}
 
-          {/* 1. Beacon Type Grid (Icon-First) */}
+          {}
           <div className="beacon-form__section">
             <span className="beacon-form__label">1. CHOOSE TYPE <span className="required-star">*</span></span>
             <div className="beacon-type-grid" role="radiogroup" aria-label="Beacon Type Selector">
@@ -176,7 +165,7 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
             </div>
           </div>
 
-          {/* 2. Urgency Selection */}
+          {}
           <div className="beacon-form__section">
             <span className="beacon-form__label">2. URGENCY LEVEL <span className="required-star">*</span></span>
             <div className="beacon-urgency-grid" role="radiogroup" aria-label="Urgency Level Selector">
@@ -202,7 +191,7 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
             </div>
           </div>
 
-          {/* 3. Message Details (With Voice Input Integration) */}
+          {}
           <div className="beacon-form__section">
             <label htmlFor="beacon-message" className="beacon-form__label">3. MESSAGE DETAILS (OPTIONAL)</label>
             <div className="beacon-textarea-wrapper" style={{ position: 'relative' }}>
@@ -215,7 +204,7 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
                 rows="3"
                 style={{ width: '100%', paddingRight: '45px', boxSizing: 'border-box' }}
               />
-              
+
               {supportsSpeech && (
                 <button
                   type="button"
@@ -246,23 +235,23 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
                 </button>
               )}
             </div>
-            
-            {/* Visual Feedback for Voice Recording */}
+
+            {}
             {isListening && (
               <div style={{ color: '#ff4d6a', fontSize: '0.85rem', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span className="pulsing-dot" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ff4d6a', animation: 'pulse 1.5s infinite' }}></span>
                 Listening... Speak now.
               </div>
             )}
-            
-            {/* Error UI for permissions/browser incompatibilities */}
+
+            {}
             {speechError && (
               <div style={{ color: '#ffaa00', fontSize: '0.85rem', marginTop: '6px' }}>
                 {speechError}
               </div>
             )}
-            
-            {/* Injecting CSS Keyframes directly in case they aren't globally defined */}
+
+            {}
             <style>
               {`
                 @keyframes pulse {
@@ -274,7 +263,43 @@ export default function CreateBeaconForm({ onSubmit, onClose }) {
             </style>
           </div>
 
-          {/* 4. Actions */}
+          {}
+          <div className="beacon-form__section">
+            <span className="beacon-form__label">4. LOCATION <span className="required-star">*</span></span>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+              <button
+                type="button"
+                className="beacon-type-btn"
+                style={{ flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                onClick={onGetGPS}
+              >
+                <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>📍</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Use GPS</span>
+              </button>
+
+              <button
+                type="button"
+                className="beacon-type-btn"
+                style={{ flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                onClick={onDropPin}
+              >
+                <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>🗺️</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Drop Pin</span>
+              </button>
+            </div>
+            {pinLocation && (
+              <div style={{ fontSize: '0.8rem', color: '#00d68f', textAlign: 'center', padding: '6px', background: 'rgba(0, 214, 143, 0.1)', borderRadius: '4px' }}>
+                ✅ Location set: {pinLocation.lat.toFixed(4)}, {pinLocation.lng.toFixed(4)}
+              </div>
+            )}
+            {!pinLocation && (
+              <div style={{ fontSize: '0.8rem', color: '#ffaa00', textAlign: 'center', padding: '6px' }}>
+                ⚠️ Location not set
+              </div>
+            )}
+          </div>
+
+          {}
           <div className="beacon-form-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button
               type="submit"

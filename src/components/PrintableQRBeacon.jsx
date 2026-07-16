@@ -2,16 +2,15 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function PrintableQRBeacon({ beaconData, onClose }) {
-  // Serialize the data for the QR code
+
   const qrPayload = JSON.stringify(beaconData);
-  
-  // Format the date for display
+
   const timestamp = beaconData.timestamp ? new Date(beaconData.timestamp).toLocaleString() : new Date().toLocaleString();
 
   return (
     <div className="qr-beacon-overlay">
       <div className="qr-beacon-container" id="printable-qr-card">
-        {/* Screen-only header */}
+        {}
         <header className="qr-beacon-header no-print">
           <h2>🖨️ Offline QR Beacon Card</h2>
           <button 
@@ -24,7 +23,7 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
           </button>
         </header>
 
-        {/* Printable Card Area */}
+        {}
         <div className="qr-card">
           <div className="qr-card-header">
             <h3>SIGNAL BEACON</h3>
@@ -42,7 +41,7 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
                 includeMargin={true}
               />
             </div>
-            
+
             <div className="qr-details">
               <div className="qr-detail-row">
                 <span className="qr-label">TYPE:</span>
@@ -66,7 +65,7 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {}
         <div className="qr-actions no-print">
           <button 
             className="qr-print-btn"
@@ -94,7 +93,7 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
           z-index: 9999;
           padding: 20px;
         }
-        
+
         .qr-beacon-container {
           background: var(--bg-surface, #1e1e1e);
           border-radius: 12px;
@@ -255,11 +254,11 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
           body * {
             visibility: hidden;
           }
-          
+
           #printable-qr-card, #printable-qr-card * {
             visibility: visible;
           }
-          
+
           #printable-qr-card {
             position: absolute;
             left: 0;
@@ -270,11 +269,11 @@ export default function PrintableQRBeacon({ beaconData, onClose }) {
             background: white;
             border-radius: 0;
           }
-          
+
           .no-print {
             display: none !important;
           }
-          
+
           .qr-beacon-overlay {
             position: static;
             background: none;

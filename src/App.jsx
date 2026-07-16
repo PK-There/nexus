@@ -1,17 +1,4 @@
-/**
- * App.jsx — Signal root component
- *
- * Phase 2 wiring:
- *   - Uses `useLiveQuery` from dexie-react-hooks to subscribe to db.beacons
- *   - Passes live data to MapView and ListView (replacing hardcoded dummy data)
- *   - Manages CreateBeaconForm open/close and pin-drop mode for GPS fallback
- *   - Seeds the database on first load so the app isn't blank
- *
- * Phase 3 wiring:
- *   - SyncModal for mesh sync (WebRTC P2P + Socket.io relay)
- *   - syncService auto-connects to relay on mount
- *   - Sync FAB button with connection status indicator
- */
+
 
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -33,18 +20,15 @@ export default function App() {
   const [relayStatus, setRelayStatus] = useState('disconnected');
   const [peerConnected, setPeerConnected] = useState(false);
 
-  // ── Seed DB on first load ──────────────────────────────────
   useEffect(() => {
     seedIfEmpty();
   }, []);
 
-  // ── Auto-connect relay + track status ──────────────────────
   useEffect(() => {
     syncService.onRelayStatus = (status) => setRelayStatus(status);
     syncService.onPeerConnected = () => setPeerConnected(true);
     syncService.onPeerDisconnected = () => setPeerConnected(false);
 
-    // Auto-connect to relay on app load
     syncService.connectRelay();
 
     return () => {
@@ -54,19 +38,17 @@ export default function App() {
     };
   }, []);
 
-  // ── Live query: subscribe to ALL beacons, sorted newest first ──
   const beacons = useLiveQuery(
     () => db.beacons.orderBy('timestamp').reverse().toArray(),
     [],    // deps — empty = re-run only when table changes
     []     // default value while loading
-  );
+  ) || [];
 
-  // ── Pin-drop from main map (GPS fallback) ──────────────────
   function handleMapClick(coords) {
     if (pinDropMode) {
       setPinLocation(coords);
       setPinDropMode(false);
-      // Auto-open form if not already open
+
       if (!showForm) setShowForm(true);
     }
   }
@@ -82,6 +64,27 @@ export default function App() {
     setPinLocation(null);
   }
 
+  function handleGetGPS() {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setPinLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      (error) => {
+        alert("Unable to retrieve your location. " + error.message);
+      }
+    );
+  }
+
+  function handleTriggerPinDrop() {
+    setShowForm(false);
+    setPinDropMode(true);
+    setActiveView('map');
+  }
+
   async function handleCreateBeacon(beaconData) {
     try {
       const payload = {
@@ -89,21 +92,14 @@ export default function App() {
         lat: pinLocation ? pinLocation.lat : null,
         lng: pinLocation ? pinLocation.lng : null
       };
-      
+
       await saveNewBeacon(payload);
       handleCloseForm();
     } catch (err) {
       console.error("Failed to create beacon:", err);
-      alert("Failed to create beacon.");
+      alert(`Failed to create beacon: ${err.message}`);
     }
   }
-
-  // ── Status indicator logic ─────────────────────────────────
-  const statusDot = peerConnected
-    ? 'connected'
-    : relayStatus === 'connected'
-      ? 'relay'
-      : 'offline';
 
   const statusText = peerConnected
     ? 'P2P Connected'
@@ -113,7 +109,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* ── Header ──────────────────────────────────────────── */}
+      {}
       <header className="header">
         <div className="header-brand">
           <h1 className="header-title">Signal</h1>
@@ -134,7 +130,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── View toggle ─────────────────────────────────────── */}
+      {}
       <nav className="view-toggle" aria-label="View selector">
         <button
           className={`toggle-btn ${activeView === 'map' ? 'active' : ''}`}
@@ -159,7 +155,7 @@ export default function App() {
         </button>
       </nav>
 
-      {/* ── Main content ────────────────────────────────────── */}
+      {}
       <main className="main-content">
         {activeView === 'map' && (
           <MapView
@@ -176,7 +172,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ── FAB: Sync ───────────────────────────────────────── */}
+      {}
       <button
         className={`fab-sync ${peerConnected ? 'connected' : ''}`}
         onClick={() => setShowSync(true)}
@@ -186,7 +182,7 @@ export default function App() {
         🔗
       </button>
 
-      {/* ── FAB: Create Beacon ──────────────────────────────── */}
+      {}
       <button
         className="fab"
         onClick={handleOpenForm}
@@ -196,27 +192,25 @@ export default function App() {
         <span className="fab-icon">+</span>
       </button>
 
-      {/* ── Beacon count indicator ──────────────────────────── */}
+      {}
       {beacons.length > 0 && (
         <div className="beacon-count">
           {beacons.length} beacon{beacons.length !== 1 ? 's' : ''} active
         </div>
       )}
 
-      {/* ── Create Form Overlay ─────────────────────────────── */}
+      {}
       {showForm && (
         <CreateBeaconForm
-          onClose={handleCloseForm}
           onSubmit={handleCreateBeacon}
+          onClose={handleCloseForm}
           pinLocation={pinLocation}
-          onRequestPin={() => {
-            setPinDropMode(true);
-            setActiveView('map'); // Switch to map for pin-drop
-          }}
+          onGetGPS={handleGetGPS}
+          onDropPin={handleTriggerPinDrop}
         />
       )}
 
-      {/* ── Sync Modal Overlay ──────────────────────────────── */}
+      {}
       {showSync && (
         <SyncModal onClose={() => setShowSync(false)} />
       )}

@@ -2,12 +2,21 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    host: true,
+    port: 5173,
+    proxy: {
+      '/socket.io': {
+        target: 'http://127.0.0.1:4000',
+        ws: true,
+        changeOrigin: true
+      }
+    }
+  },
   plugins: [
-    basicSsl(),
     react(),
     nodePolyfills({
       include: ['events', 'buffer', 'stream', 'util', 'process'],

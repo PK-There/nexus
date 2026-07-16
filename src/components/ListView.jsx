@@ -1,14 +1,9 @@
-/**
- * ListView — Vertical card feed of beacons.
- * Displays each beacon as a styled card with type icon, urgency,
- * message, coordinates, and relative timestamp.
- */
+
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { calculateTrustScore } from '../trustLogic';
 
-// ── Config ──────────────────────────────────────────────────────────
 const BEACON_CONFIG = {
   NEED: {
     icon: '🆘',
@@ -47,7 +42,6 @@ const URGENCY_STYLES = {
   low:      { bg: '#3b82f6', label: 'LOW',      pulse: false },
 };
 
-// ── Time-ago ────────────────────────────────────────────────────────
 function timeAgo(ts) {
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 60) return `${diff}s ago`;
@@ -55,7 +49,6 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
-// ── Single Beacon Card ──────────────────────────────────────────────
 function BeaconCard({ beacon, myKey, edges }) {
   const cfg = BEACON_CONFIG[beacon.type] || BEACON_CONFIG.STATUS;
   const urg = URGENCY_STYLES[beacon.urgency] || URGENCY_STYLES.low;
@@ -72,7 +65,7 @@ function BeaconCard({ beacon, myKey, edges }) {
       }}
       aria-label={`${cfg.label} beacon: ${beacon.message}`}
     >
-      {/* Header row */}
+      {}
       <div className="beacon-card__header">
         <div className="beacon-card__type-group">
           <span className="beacon-card__icon" aria-hidden="true">{cfg.icon}</span>
@@ -103,13 +96,13 @@ function BeaconCard({ beacon, myKey, edges }) {
         </span>
       </div>
 
-      {/* Message body */}
+      {}
       <p className="beacon-card__message">{beacon.message}</p>
 
-      {/* Footer: coords + time */}
+      {}
       <div className="beacon-card__footer">
         <span className="beacon-card__coords">
-          📍 {beacon.lat.toFixed(4)}, {beacon.lng.toFixed(4)}
+          📍 {beacon.lat != null && beacon.lng != null ? `${beacon.lat.toFixed(4)}, ${beacon.lng.toFixed(4)}` : 'Location Not Provided'}
         </span>
         <span className="beacon-card__time">
           {timeAgo(beacon.timestamp)}
@@ -119,7 +112,6 @@ function BeaconCard({ beacon, myKey, edges }) {
   );
 }
 
-// ── List View ───────────────────────────────────────────────────────
 export default function ListView({ beacons }) {
   const device = useLiveQuery(() => db.device.get('me'));
   const edges = useLiveQuery(() => db.trustEdges.toArray()) || [];

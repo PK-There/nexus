@@ -39,7 +39,8 @@ html, body, #root {
 
 body {
   font-family: var(--font-family);
-  background: var(--bg-primary);
+  background: radial-gradient(circle at top left, #1a1a2e 0%, var(--bg-primary) 60%);
+  background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
@@ -58,7 +59,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: var(--bg-secondary);
+  background: rgba(18, 18, 26, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-glass);
   z-index: 100;
   flex-shrink: 0;
@@ -71,10 +74,11 @@ body {
 }
 
 .header-title {
-  font-size: 1.35rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--accent-cyan), #7c5cff);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent-cyan), #a67cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -173,6 +177,13 @@ body {
 
 .leaflet-container {
   background: var(--bg-primary) !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.leaflet-map {
+  width: 100%;
+  height: 100%;
 }
 
 .custom-beacon-marker {
@@ -859,6 +870,19 @@ body {
   box-shadow: 0 6px 24px rgba(0, 210, 255, 0.3);
 }
 
+/* ── Relay sync section ───────────────────────────────────── */
+.relay-sync-section {
+  background: rgba(0, 210, 255, 0.06);
+  border: 1px solid rgba(0, 210, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 4px;
+}
+
+.relay-sync-section .sync-desc {
+  margin-bottom: 12px;
+}
+
 /* ── Room code display ────────────────────────────────────── */
 .sync-code-display {
   display: flex;
@@ -1150,4 +1174,107 @@ body {
 @keyframes sync-pulse {
   0%, 100% { box-shadow: 0 4px 16px rgba(0, 214, 143, 0.3); }
   50% { box-shadow: 0 4px 24px rgba(0, 214, 143, 0.5), 0 0 0 6px rgba(0, 214, 143, 0.1); }
+}
+.pin-drop-mode { cursor: crosshair !important; } .pin-drop-mode .leaflet-interactive { cursor: crosshair !important; }
+
+/* ── Trust Graph View ────────────────────────────────────────── */
+.trust-graph-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.trust-graph-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-glass);
+  flex-shrink: 0;
+}
+
+.my-key-box {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.my-key-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.my-key-value {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.65rem;
+  color: var(--accent-cyan);
+  word-break: break-all;
+  opacity: 0.85;
+}
+
+.vouch-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.vouch-btn:hover:not(:disabled) {
+  background: var(--bg-glass-hover);
+}
+
+.vouch-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vouch-btn.primary {
+  background: linear-gradient(135deg, var(--accent-cyan), #7c5cff);
+  border: none;
+  color: white;
+}
+
+.vouch-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vouch-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.72rem;
+  resize: vertical;
+}
+
+.vouch-input::placeholder { color: var(--text-secondary); opacity: 0.6; }
+
+.vouch-status {
+  font-size: 0.8rem;
+  margin: 0;
+  color: var(--accent-green);
+}
+
+.vouch-form-actions {
+  display: flex;
+  gap: 8px;
 }

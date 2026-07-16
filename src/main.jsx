@@ -4,14 +4,12 @@ import './index.css'
 import App from './App.jsx'
 import { initializeDeviceIdentity } from './crypto.js'
 
-// Initialize cryptographic identity before rendering
-initializeDeviceIdentity().then(() => {
+initializeDeviceIdentity().catch(err => {
+  console.warn("Crypto init failed, proceeding in fallback mode:", err);
+}).finally(() => {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <App />
     </StrictMode>,
-  )
-}).catch(err => {
-  console.error("Failed to boot app:", err);
-  document.getElementById('root').innerHTML = "<h1>Failed to initialize secure storage.</h1>";
+  );
 });
