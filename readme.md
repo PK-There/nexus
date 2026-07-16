@@ -44,6 +44,20 @@ In a crisis, communication is the difference between life and death. Signal allo
 
 ---
 
+## 🚫 How It Works Without ANY Internet
+
+If a disaster wipes out cellular towers and global internet, **local devices still have Wi-Fi and Bluetooth antennas that work.** Signal uses a "Store-and-Forward" mesh networking strategy (sometimes called a Sneakernet):
+
+1. **The App Loads Offline**: Signal is built as a Progressive Web App (PWA) with a Service Worker. Once loaded before a crisis, it runs entirely from the device's local cache. It works perfectly in Airplane Mode.
+2. **Data Lives Locally**: Beacons are saved directly into the browser's local storage (IndexedDB) instead of a cloud server.
+3. **Local "Hotspot" Syncing**: 
+   - A volunteer turns on their phone's **Mobile Hotspot** (which emits a local Wi-Fi signal, even with no cellular data).
+   - You connect to their hotspot. 
+   - When you hit **"Sync"**, your browser connects to their local IP address. The two devices trade missing beacons over a local WebRTC data channel.
+   - The volunteer then walks to another neighborhood, turns on their hotspot, and syncs with someone else—carrying your SOS beacon with them physically across the disaster zone!
+
+---
+
 ## 📱 How to Use (User Guide)
 
 ### 1. Broadcasting a Signal
